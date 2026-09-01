@@ -1,0 +1,11 @@
+amount,channel,country,latency_ms
+41.20,web,US,120
+55.10,web,US,98
+33.90,app,US,140
+60.00,web,CA,110
+48.75,app,US,132
+52.30,web,US,101
+39.60,app,CA,155
+45.10,web,US,115
+58.90,app,US,128
+50.00,web,CA,105
