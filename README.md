@@ -5,19 +5,23 @@ features moved and by how much** — in metrics a reviewer can check, not a
 blended score. Zero runtime dependencies — Python 3.10+ and nothing else.
 
 ```console
-$ feature-drift train.csv serving.csv
-training: train.csv
-serving:  serving.csv
+$ feature-drift examples/train.csv examples/serving.csv
+training: examples/train.csv
+serving:  examples/serving.csv
 
-SEVERE  amount  PSI=0.412  distance=0.371
-          mean moved 48.2 -> 96.5 (+2.6 training sd)
-SEVERE  channel  PSI=0.310  distance=0.248
-          1 category never seen in training carries 12.4% of serving rows
-drifting latency_ms  PSI=0.121  distance=0.089
-stable  country  PSI=0.004  distance=0.011
+SEVERE  amount  PSI=8.283  distance=1.000
+          mean moved 48.485 -> 98.985 (+6.2 training sd)
+SEVERE  channel  PSI=2.558  distance=0.300
+          1 category never seen in training carries 30.0% of serving rows
+SEVERE  latency_ms  PSI=0.759  distance=0.100
+stable  country  PSI=0.000  distance=0.000
 
 3 of 4 shared feature(s) moved
 ```
+
+(Real output for the committed `examples/`; exit code 3. The example files are
+small, so PSI values are large: an empty bucket is floored at 0.0001, which
+weighs heavily when a share is 10% on one side and 0 on the other.)
 
 ## What it measures, and why these
 
@@ -59,6 +63,24 @@ feature-drift train.csv serve.csv --fail-on drifting  # stricter gate
 Exit codes are the monitoring interface: `0` nothing at or above
 `--fail-on` (default: `severe`), `1` bad input, `3` drift at or above it.
 
+## Install
+
+Not published on PyPI; install from a clone (Python 3.10+, no runtime
+dependencies):
+
+```console
+git clone https://github.com/hellpuffyt/feature-drift && cd feature-drift
+python -m venv .venv && . .venv/bin/activate
+pip install .
+```
+
+## Verification
+
+PSI, KS and total variation were checked against NumPy and
+`scipy.stats.ks_2samp` on 1,000 random sample pairs (max absolute difference
+≤ 1e-15), and against hand-computed values in `tests/test_stats.py`. SciPy and
+NumPy are not dependencies; they were only used for that check.
+
 ## Development
 
 ```console
@@ -67,5 +89,8 @@ pytest
 ruff check .
 mypy
 ```
+
+Security: see [SECURITY.md](SECURITY.md). Audit evidence:
+[docs/PRODUCTION_READINESS.md](docs/PRODUCTION_READINESS.md).
 
 MIT licensed.

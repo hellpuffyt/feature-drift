@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+
 import pytest
 
 from feature_drift import stats
@@ -106,3 +108,23 @@ class TestSummary:
 
     def test_empty_is_zeroes(self) -> None:
         assert stats.summary([]) == (0.0, 0.0)
+
+
+# --- audit: hand-computed reference values --------------------------------
+
+
+def test_ks_matches_a_hand_computed_value() -> None:
+    # train {1,2,3,4}, serve {3,4,5,6}: CDF gap is largest at x=2 (0.5 - 0)
+    # and x=4 (1.0 - 0.5) -> 0.5. scipy.stats.ks_2samp gives 0.5 too.
+    assert stats.ks_statistic([1, 2, 3, 4], [3, 4, 5, 6]) == 0.5
+
+
+def test_total_variation_matches_a_hand_computed_value() -> None:
+    # train a:0.5 b:0.5, serve a:0.25 b:0.25 c:0.5 -> 0.5*(0.25+0.25+0.5)=0.5
+    assert stats.total_variation(["a", "b"], ["a", "b", "c", "c"]) == 0.5
+
+
+def test_categorical_psi_matches_a_hand_computed_value() -> None:
+    # 50/50 -> 25/75: 0.25*ln(0.25/0.5)*-1 + 0.25*ln(0.75/0.5) = 0.25*ln(3)
+    value = stats.categorical_psi(["a", "b"], ["a", "b", "b", "b"])
+    assert abs(value - 0.25 * math.log(3)) < 1e-12

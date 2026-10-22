@@ -76,7 +76,8 @@ def _feature(train: FeatureColumn, serve: FeatureColumn) -> FeatureDrift:
             share = sum(serve_counts[c] for c in unseen) / max(len(serve_values_c), 1)
             notes.append(
                 f"{len(unseen)} categor{'y' if len(unseen) == 1 else 'ies'} "
-                f"never seen in training carry {share:.1%} of serving rows"
+                f"never seen in training {'carries' if len(unseen) == 1 else 'carry'} "
+                f"{share:.1%} of serving rows"
             )
 
     missing_delta = serve.missing_rate - train.missing_rate
