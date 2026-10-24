@@ -89,3 +89,32 @@ class TestErrors:
     def test_missing_file_reports_the_path(self, tmp_path: Path) -> None:
         with pytest.raises(DataFormatError, match="cannot read"):
             io.load(tmp_path / "absent.csv")
+
+
+# --- audit regressions ----------------------------------------------------
+
+
+def test_repeated_header_is_refused(tmp_path: Path) -> None:
+    # DictReader keeps the last of two "a" columns and drops the first.
+    with pytest.raises(DataFormatError, match="repeats column"):
+        io.load(write(tmp_path / "d.csv", "a,a\n1,2\n"))
+
+
+def test_undecodable_csv_is_a_data_format_error(tmp_path: Path) -> None:
+    path = tmp_path / "latin.csv"
+    path.write_bytes(b"a\n\xff\n")
+    with pytest.raises(DataFormatError, match="not valid UTF-8"):
+        io.load(path)
+
+
+def test_undecodable_jsonl_is_a_data_format_error(tmp_path: Path) -> None:
+    path = tmp_path / "latin.jsonl"
+    path.write_bytes(b'{"a": "\xff"}\n')
+    with pytest.raises(DataFormatError, match="not valid UTF-8"):
+        io.load(path)
+
+
+def test_oversized_csv_field_is_a_data_format_error(tmp_path: Path) -> None:
+    path = write(tmp_path / "wide.csv", "a,b\nx," + "y" * 200_000 + "\n")
+    with pytest.raises(DataFormatError, match="malformed CSV"):
+        io.load(path)

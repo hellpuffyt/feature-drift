@@ -86,12 +86,24 @@ def _csv_rows(path: Path) -> list[dict[str, str]]:
             reader = csv.DictReader(handle)
             if reader.fieldnames is None:
                 raise DataFormatError(f"{path.name}: file is empty")
+            names = [name for name in reader.fieldnames if name]
+            duplicates = sorted({name for name in names if names.count(name) > 1})
+            if duplicates:
+                # DictReader keeps only the last of repeated names, silently
+                # dropping the other column's values.
+                raise DataFormatError(
+                    f"{path.name}: header repeats column(s) {', '.join(duplicates)}"
+                )
             return [
                 {k: (v if v is not None else "") for k, v in row.items() if k}
                 for row in reader
             ]
     except OSError as err:
         raise DataFormatError(f"cannot read {path}: {err.strerror or err}") from err
+    except csv.Error as err:
+        raise DataFormatError(f"{path.name}: malformed CSV: {err}") from err
+    except UnicodeDecodeError as err:
+        raise DataFormatError(f"{path.name}: not valid UTF-8 ({err.reason})") from err
 
 
 def _jsonl_rows(path: Path) -> list[dict[str, str]]:
@@ -114,6 +126,8 @@ def _jsonl_rows(path: Path) -> list[dict[str, str]]:
                 rows.append({str(k): _scalar(v) for k, v in obj.items()})
     except OSError as err:
         raise DataFormatError(f"cannot read {path}: {err.strerror or err}") from err
+    except UnicodeDecodeError as err:
+        raise DataFormatError(f"{path.name}: not valid UTF-8 ({err.reason})") from err
     return rows
 
 
